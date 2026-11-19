@@ -1,0 +1,5 @@
+node_modules/
+.star-letter/
+.env*
+*.log
+*.blend1

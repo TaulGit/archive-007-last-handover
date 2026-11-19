@@ -1,0 +1,26 @@
+{
+  "title": "编号007：最后一次交接",
+  "summary": "档案员007在碎纸机里发现自己的报废单，与接班人008完成最后一次交接。",
+  "tags": [
+    "第一人称",
+    "推理",
+    "角色扮演"
+  ],
+  "gameCategory": [
+    10002,
+    10001
+  ],
+  "description": "你以档案员007的第一人称视角在碎纸机前开始值班。沿七个剧情节点调查签收单与家庭录音，遇见008，最后与他分头送出档案。",
+  "controls": "进入即开始。按E或点调查按钮，阅读后点继续主线，自动抵达下一现场。WASD移动，左右方向键转身，J看手记，M返回目标。触屏使用屏幕箭头移动与转身。",
+  "gameFile": "./dist",
+  "cover": "./dist/overview.png",
+  "screen": 0,
+  "gameType": 0,
+  "priceType": 0,
+  "visibility": 1,
+  "capabilityDeclaration": {
+    "schemaVersion": 1,
+    "capabilities": {}
+  },
+  "gameId": 1015612
+}

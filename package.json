@@ -1,0 +1,10 @@
+{
+  "name": "archive-007",
+  "private": true,
+  "scripts": {
+    "build": "esbuild game-entry.js --bundle --minify --outfile=dist/game.js && node sync-entry.cjs",
+    "test": "node verify.cjs"
+  },
+  "dependencies": {"three":"0.180.0"},
+  "devDependencies": {"esbuild":"0.28.2","playwright-core":"1.65.1"}
+}
