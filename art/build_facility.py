@@ -189,6 +189,39 @@ for obj in list(bpy.data.objects):
         bevel.segments=3
         bpy.ops.object.modifier_apply(modifier=bevel.name)
         obj.select_set(False)
+zone("09 | Signs of occupancy")
+for name in ["canvas","zinc","manila","terrazzo"]:
+    palette[name]=palette["concrete"].copy()
+    palette[name].name=name
+for obj in list(scene.objects):
+    if obj.name.startswith(("Floor","Central corridor")):
+        obj.data.materials[0]=palette["terrazzo"]
+for x in [-15,-9]:
+    box("Folded field blanket",x,-5.23,.782,1.29,1.05,.095,"canvas")
+    for i in range(5):
+        box("Quilted seam",x,-5.65+i*.19,.833,1.28,.015,.014,"green")
+for x in [-12.95,-.95]:
+    for i in range(5):
+        folder=box("Unprocessed file",x+(i%2)*.045,5.64,.943+i*.031,.52,.35,.03,"manila")
+        folder.rotation_euler.z=(i%3-1)*.075
+        box("File tab",x+.16,5.45,.947+i*.031,.14,.06,.018,"manila")
+for x in [-4.8,4.7]:
+    pipe=disc("Service riser",(x,-9.50,1.48),.086,2.85,"zinc")
+    for z in [.32,1.5,2.5]:
+        disc("Compression fitting",(x,-9.5,z),.109,.105,"brass")
+    bpy.ops.mesh.primitive_torus_add(location=(x,-9.30,1.15),rotation=(math.pi/2,0,0),major_radius=.17,minor_radius=.024)
+    assign(bpy.context.object,"Isolation valve wheel","red")
+    box("Valve spoke",x,-9.30,1.15,.34,.03,.025,"red")
+    box("Valve stem",x,-9.4,1.15,.055,.21,.055,"zinc")
+for x in [-16,-4,8]:
+    box("Hall service duct",x+4,.94,2.80,8,.31,.28,"zinc")
+    for dx in [1,4,7]:
+        box("Duct suspension band",x+dx,.94,2.80,.06,.34,.31,"graphite")
+for x in [-15,-3,9]:
+    box("Noticeboard backing",x,1.585,1.76,1.55,.08,.83,"green")
+    for i in range(3):
+        box("Pinned duty roster",x-.46+i*.47,1.534,1.76,.34,.014,.53,"manila")
+        box("Roster clip",x-.46+i*.47,1.515,2.01,.10,.018,.045,"zinc")
 zone("07 | Ceiling - toggle for interior view")
 roof=group
 for x,s,name,sign,accent in rooms:
@@ -237,10 +270,14 @@ bpy.ops.object.select_all(action="DESELECT")
 atlas=bpy.data.images.load(str(out/"material-atlas.png"))
 atlas.pack()
 quadrants={"green":(0,1),"enamel":(1,1),"graphite":(0,0),"blue":(1,0)}
+extra=bpy.data.images.load(str(out/"nightshift-atlas.jpg"))
+extra.pack()
+new_surfaces={"canvas":(0,1),"zinc":(1,1),"manila":(0,0),"terrazzo":(1,0)}
+quadrants.update(new_surfaces)
 for material_name in quadrants:
     material=palette[material_name]
     tex=material.node_tree.nodes.new("ShaderNodeTexImage")
-    tex.image=atlas
+    tex.image=extra if material_name in new_surfaces else atlas
     shader=material.node_tree.nodes.get("Principled BSDF")
     material.node_tree.links.new(tex.outputs["Color"],shader.inputs["Base Color"])
     shader.inputs["Roughness"].default_value=.68

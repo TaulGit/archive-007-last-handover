@@ -21,13 +21,30 @@ let pos={x:0,z:0},yaw=0,pitch=-.16;
 const keys=new Set(),solids=[],scene=new T.Scene(),camera=new T.PerspectiveCamera(67,1,.05,85);
 let renderer;
 const world=$('world');
+world.tabIndex=0;
+const slides=[
+ ['夜班','我在城北的档案室上夜班。这里收到的每一份资料，都属于一个已经停用的仿生人。'],
+ ['签收','每天，我核对编号、签名，再把黄页送进碎纸机。主管从没让我见过接班的人。'],
+ ['今晚的工单','妹妹在留言里说，家里给我留了灯。我刚拿起外套，碎纸机的卡纸灯又亮了。']
+];
+let slideTimer;
+function prologue(index=0){
+ clearTimeout(slideTimer);
+ if(index===slides.length){$('overlay').classList.remove('prologue','intro');$('overlay').style.removeProperty('--still');arrive();return}
+ panelMode='prologue';$('overlay').classList.add('prologue');
+ $('overlay').style.setProperty('--still','url("prologue-'+(index+1)+'.webp")');
+ show('夜班之前　／　'+(index+1)+' · 3',...slides[index],index===2?'进入档案室':'下一张',()=>prologue(index+1));
+ const skip=document.createElement('button');skip.textContent='跳过前情';skip.onclick=()=>prologue(slides.length);$('choices').append(skip);
+ slideTimer=setTimeout(()=>prologue(index+1),5000);
+}
 function show(tag,title,body,action,callback){
- busy=true;keys.clear();$('overlay').hidden=false;$('hud').hidden=true;
+ busy=true;keys.clear();if(document.pointerLockElement===world)document.exitPointerLock();$('overlay').hidden=false;$('hud').hidden=true;
  $('tag').textContent=tag;$('title').textContent=title;$('copy').textContent=body;
  const button=document.createElement('button');button.textContent=action;button.onclick=callback;
  $('choices').replaceChildren(button);button.focus();
 }
 function resume(){busy=false;panelMode='';$('overlay').hidden=true;$('hud').hidden=false;
+ world.focus({preventScroll:true});
  const [id,chapter,action]=beats[step];$('chapter').textContent='档案员 007　／　第 '+chapter+' 章';
  $('goal').textContent=stations[id][0]+'　·　'+action;
 }
@@ -51,6 +68,7 @@ function blocked(x,z){return Math.abs(x)>17.8||Math.abs(z)>11||solids.some(b=>x>
 function update(dt){
  if(!busy){const val=k=>Number(keys.has(k)),f=val('KeyW')-val('KeyS'),s=val('KeyD')-val('KeyA');
  yaw+=(val('ArrowLeft')-val('ArrowRight'))*dt*1.9;const stride=dt*3/Math.max(1,Math.hypot(f,s));
+ pitch=T.MathUtils.clamp(pitch+(val('ArrowUp')-val('ArrowDown'))*dt*1.45,-1.25,1.25);
  const x=pos.x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*stride,z=pos.z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*stride;
  if(!blocked(x,pos.z))pos.x=x;if(!blocked(pos.x,z))pos.z=z;
  const [,a,b]=stations[beats[step][0]],dx=a-pos.x,dz=-b-pos.z;
@@ -59,13 +77,20 @@ function update(dt){
  }
  camera.position.set(pos.x,1.67,pos.z);camera.rotation.set(pitch,yaw,0,'YXZ');
 }
-onkeydown=e=>{if(e.repeat)return;if(busy){if(e.code==='Escape'&&panelMode==='journal')resume();return}
+onkeydown=e=>{if(!busy&&e.code.startsWith('Arrow'))e.preventDefault();if(e.repeat)return;if(busy){if(e.code==='Escape'&&panelMode==='journal')resume();return}
  keys.add(e.code);if(e.code==='KeyE')interact();if(e.code==='KeyJ')journal();if(e.code==='KeyM')arrive()};
 onkeyup=e=>keys.delete(e.code);onblur=()=>keys.clear();
 for(const button of document.querySelectorAll('[data-key]')){
- button.onpointerdown=e=>{button.setPointerCapture(e.pointerId);keys.add(button.dataset.key)};
+ button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);keys.add(button.dataset.key);
+ if(button.dataset.key==='ArrowLeft')yaw+=.12;if(button.dataset.key==='ArrowRight')yaw-=.12;};
  button.onlostpointercapture=()=>keys.delete(button.dataset.key);
 }
+world.onpointerdown=e=>{if(!busy&&e.pointerType==='mouse'&&e.button===0){world.focus();try{world.requestPointerLock?.()?.catch(()=>{})}catch{}}};
+document.addEventListener('mousemove',e=>{
+ if(!busy&&document.pointerLockElement===world){yaw-=e.movementX*.0025;pitch=T.MathUtils.clamp(pitch-e.movementY*.0025,-1.25,1.25)}
+});
+$('lookUp').onclick=()=>pitch=Math.min(1.25,pitch+.20);
+$('lookDown').onclick=()=>pitch=Math.max(-1.25,pitch-.20);
 async function build(){
  renderer=new T.WebGLRenderer({canvas:world,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));scene.background=new T.Color(0x243335);
  scene.add(new T.HemisphereLight(0xfff3d7,0x7a918d,1.9));const sun=new T.DirectionalLight(0xffe9c5,1.5);sun.position.set(4,8,6);scene.add(sun);
@@ -80,6 +105,6 @@ async function build(){
  for(const [w,h,d,y,color] of [[.44,.66,.28,1.13,0x455d55],[.27,.32,.24,1.63,0xc8ab88],[.31,.1,.26,1.82,0x253b36],[.34,.8,.23,.43,0x263b3a],[.12,.07,.015,1.29,0xe4bd76]]){
  const m=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color}));m.position.set(0,y,y===1.29?.15:0);clerk.add(m)}
  function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}onresize=resize;resize();
- let prev=performance.now();renderer.setAnimationLoop(now=>{update(Math.min(.05,(now-prev)/1000));prev=now;clerk.visible=step>=3;if(step===5)clerk.position.set(13,0,6.1);else clerk.position.set(11,0,-6.48);renderer.render(scene,camera)});arrive()
+ let prev=performance.now();renderer.setAnimationLoop(now=>{update(Math.min(.1,(now-prev)/1000));prev=now;clerk.visible=step>=3;if(step===5)clerk.position.set(13,0,6.1);else clerk.position.set(11,0,-6.48);renderer.render(scene,camera)});prologue()
 }
 build().catch(e=>{console.error(e);show('设施连接失败','地图未能打开','请使用支持 WebGL 2 的浏览器打开游戏预览。','重新连接',()=>location.reload())});
